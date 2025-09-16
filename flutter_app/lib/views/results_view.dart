@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/measurement_result.dart';
 
@@ -48,6 +49,60 @@ class ResultsView extends StatelessWidget {
     }
   }
 
+  /// Build background image widget - either captured photo or placeholder
+  Widget _buildBackgroundImage() {
+    if (measurementResult.imagePath != null && 
+        measurementResult.imagePath!.isNotEmpty) {
+      // Display the captured image
+      try {
+        final imageFile = File(measurementResult.imagePath!);
+        if (imageFile.existsSync()) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: FileImage(imageFile),
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('Error loading image: $e');
+      }
+    }
+    
+    // Fallback to placeholder if no image or error
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.black87,
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_outlined,
+              color: Colors.white24,
+              size: 120,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Image Not Available',
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Sort bowls by rank for display
@@ -58,34 +113,8 @@ class ResultsView extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            // Background image placeholder
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.black87,
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_outlined,
-                      color: Colors.white24,
-                      size: 120,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Captured Image Placeholder',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Background image - captured photo or placeholder
+            _buildBackgroundImage(),
 
             // Header with timestamp and back button
             Positioned(

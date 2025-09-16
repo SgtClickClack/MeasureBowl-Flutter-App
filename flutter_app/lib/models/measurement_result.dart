@@ -42,6 +42,39 @@ class MeasurementResult {
     required this.bowls,
   });
 
+  /// Create measurement results with captured image
+  factory MeasurementResult.fromCapturedImage({
+    required String imagePath,
+    List<BowlMeasurement>? bowls,
+  }) {
+    return MeasurementResult(
+      id: 'measurement_${DateTime.now().millisecondsSinceEpoch}',
+      timestamp: DateTime.now(),
+      imagePath: imagePath,
+      bowls: bowls ?? [
+        // Mock bowls for now - will be replaced with actual CV processing
+        BowlMeasurement.mock(
+          id: 'bowl_1',
+          color: 'Yellow',
+          distance: 5.2,
+          rank: 1,
+        ),
+        BowlMeasurement.mock(
+          id: 'bowl_2', 
+          color: 'Red',
+          distance: 8.7,
+          rank: 2,
+        ),
+        BowlMeasurement.mock(
+          id: 'bowl_3',
+          color: 'Black',
+          distance: 12.1,
+          rank: 3,
+        ),
+      ],
+    );
+  }
+
   /// Create mock measurement results for testing purposes
   factory MeasurementResult.createMock() {
     return MeasurementResult(

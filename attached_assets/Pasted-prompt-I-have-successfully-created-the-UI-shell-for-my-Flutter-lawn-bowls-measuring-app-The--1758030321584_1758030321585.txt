@@ -1,0 +1,37 @@
+prompt: |
+  I have successfully created the UI shell for my Flutter lawn bowls measuring app. The `CameraView` widget currently shows a black background as a placeholder.
+
+  The next task is to integrate the device's camera to display a live preview in the `CameraView` and enable image capture.
+
+  **Requirements:**
+
+  1.  **Add Dependencies:**
+      * Modify the `pubspec.yaml` file to include the required packages for camera functionality:
+          * `camera`: The primary Flutter camera plugin.
+          * `path_provider`: To get a reliable directory for storing the captured image.
+          * `path`: To correctly construct the image file path.
+
+  2.  **Configure Platform-Specific Settings:**
+      * **iOS:** Modify the `ios/Runner/Info.plist` file to add the necessary privacy descriptions for camera and microphone access (`NSCameraUsageDescription` and `NSMicrophoneUsageDescription`).
+      * **Android:** Modify the `android/app/build.gradle` file to set the `minSdkVersion` to at least 21, as required by the camera plugin. Also, ensure the `CAMERA` permission is in `android/app/src/main/AndroidManifest.xml`.
+
+  3.  **Update the `CameraView` Widget Logic:**
+      * Convert the `CameraView` into a `StatefulWidget` if it isn't already.
+      * **Initialize `CameraController`:**
+          * In the `initState` method, get the list of available cameras.
+          * Select the first back camera.
+          * Create and initialize a `CameraController` instance.
+          * Make sure to properly `dispose` of the controller in the `dispose` method to prevent memory leaks.
+      * **Display Camera Preview:**
+          * While the controller is initializing, display a `CircularProgressIndicator`.
+          * Once initialized, replace the black `Container` placeholder with the `CameraPreview` widget, passing the initialized controller to it.
+      * **Implement Image Capture:**
+          * Modify the "Measure" button's `onPressed` callback.
+          * When pressed, it should now call the `takePicture()` method on the `CameraController`.
+          * Upon successfully capturing the image, the app should navigate to the `ResultsView`.
+
+  4.  **Update `ResultsView` for Image Handling:**
+      * Modify the `ResultsView` widget to accept the file path (`XFile.path`) of the captured image instead of using a mock asset.
+      * Use `Image.file()` to display the captured image from the provided path.
+
+  Please generate the complete, updated Dart code for the `CameraView` widget and provide the exact modifications needed for `pubspec.yaml`, `Info.plist`, and `build.gradle`.

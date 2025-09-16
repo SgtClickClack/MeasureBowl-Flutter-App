@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import '../models/measurement_result.dart';
 import 'results_view.dart';
 
@@ -11,37 +15,230 @@ class CameraView extends StatefulWidget {
 }
 
 class _CameraViewState extends State<CameraView> {
+  CameraController? _controller;
+  Future<void>? _initializeControllerFuture;
+  List<CameraDescription>? _cameras;
   bool _isMeasuring = false;
 
-  /// Handle the measure button press
-  void _onMeasurePressed() async {
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  /// Initialize camera controller
+  Future<void> _initializeCamera() async {
+    try {
+      // Get list of available cameras
+      _cameras = await availableCameras();
+      
+      if (_cameras == null || _cameras!.isEmpty) {
+        // No cameras available
+        return;
+      }
+
+      // Select the first back camera (or first camera if no back camera)
+      CameraDescription selectedCamera = _cameras!.first;
+      for (var camera in _cameras!) {
+        if (camera.lensDirection == CameraLensDirection.back) {
+          selectedCamera = camera;
+          break;
+        }
+      }
+
+      // Create and initialize the camera controller
+      _controller = CameraController(
+        selectedCamera,
+        ResolutionPreset.high,
+        enableAudio: false, // Don't need audio for photos
+      );
+
+      _initializeControllerFuture = _controller!.initialize();
+      
+      // Trigger rebuild to show camera preview
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the controller to prevent memory leaks
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  /// Handle the measure button press - now captures image
+  Future<void> _onMeasurePressed() async {
     // Prevent multiple simultaneous measurements
-    if (_isMeasuring) return;
+    if (_isMeasuring || _controller == null) return;
 
     setState(() {
       _isMeasuring = true;
     });
 
-    // Simulate processing time (remove when actual camera/processing is implemented)
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      // Wait for camera to initialize
+      await _initializeControllerFuture;
 
-    // Create mock measurement results
-    final mockResults = MeasurementResult.createMock();
+      // Get the pictures directory
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String dirPath = path.join(appDir.path, 'Pictures');
+      await Directory(dirPath).create(recursive: true);
+      
+      // Create unique filename with timestamp
+      final String fileName = 'lawn_bowls_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String filePath = path.join(dirPath, fileName);
 
-    setState(() {
-      _isMeasuring = false;
-    });
+      // Take picture
+      final XFile imageFile = await _controller!.takePicture();
+      
+      // Copy the image to our directory
+      await imageFile.saveTo(filePath);
 
-    // Navigate to results view
-    if (mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => ResultsView(
-            measurementResult: mockResults,
+      // Create measurement results with captured image
+      final measurementResults = MeasurementResult.fromCapturedImage(
+        imagePath: filePath,
+      );
+
+      setState(() {
+        _isMeasuring = false;
+      });
+
+      // Navigate to results view
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ResultsView(
+              measurementResult: measurementResults,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error capturing image: $e');
+      setState(() {
+        _isMeasuring = false;
+      });
+      
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Build camera preview or loading/error state
+  Widget _buildCameraPreview() {
+    if (_controller == null || _initializeControllerFuture == null) {
+      // Camera not initialized yet or no cameras available
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.black,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: Colors.white,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Initializing Camera...',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 18,
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
+
+    return FutureBuilder<void>(
+      future: _initializeControllerFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          // Camera is initialized, show the preview
+          return SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: CameraPreview(_controller!),
+          );
+        } else if (snapshot.hasError) {
+          // Error initializing camera
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.camera_alt_outlined,
+                    color: Colors.white54,
+                    size: 80,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Camera Error',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          // Camera is still initializing
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Initializing Camera...',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -50,40 +247,8 @@ class _CameraViewState extends State<CameraView> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Camera feed placeholder (black background)
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black,
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white54,
-                      size: 80,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Camera Feed Placeholder',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 18,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Point camera at lawn bowls',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Camera preview or loading/error state
+            _buildCameraPreview(),
 
             // App title overlay at top
             Positioned(
