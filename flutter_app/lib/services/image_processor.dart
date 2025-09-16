@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:opencv_dart/opencv.dart' as cv;
 import '../models/measurement_result.dart';
@@ -94,6 +95,15 @@ class ImageProcessor {
       final double jackDiameterPixels = jackRadiusPixels * 2;
       final double scaleMmPerPixel = _jackDiameterMm / jackDiameterPixels;
 
+      // Step 6: Detect bowls using contour analysis
+      final List<Map<String, dynamic>> bowlResults = _detectBowls(
+        grayImage, 
+        jackData['x'], 
+        jackData['y'], 
+        jackRadiusPixels, 
+        scaleMmPerPixel
+      );
+
       // Clean up OpenCV Mat objects
       originalImage.dispose();
       grayImage.dispose();
@@ -110,6 +120,7 @@ class ImageProcessor {
         },
         'jack_radius': jackRadiusPixels,
         'image_path': imagePath,
+        'bowls': bowlResults,
       };
 
     } catch (e) {
@@ -118,6 +129,124 @@ class ImageProcessor {
         'error': 'OpenCV processing failed: ${e.toString()}'
       };
     }
+  }
+
+  /// Detect bowls using contour analysis
+  /// 
+  /// Returns a List of bowl data containing:
+  /// - distance: edge-to-edge distance from jack in millimeters
+  /// - x, y: center position of bowl
+  /// - area: contour area in pixels
+  static List<Map<String, dynamic>> _detectBowls(
+    cv.Mat grayImage, 
+    double jackCenterX, 
+    double jackCenterY, 
+    double jackRadiusPixels, 
+    double scaleMmPerPixel
+  ) {
+    final List<Map<String, dynamic>> bowlResults = [];
+    
+    try {
+      // Step 1: Apply adaptive threshold for clean binary image
+      final cv.Mat thresholdImage = cv.adaptiveThreshold(
+        grayImage,
+        255,  // Max value
+        cv.ADAPTIVE_THRESH_GAUSSIAN_C,  // Adaptive method
+        cv.THRESH_BINARY,  // Threshold type
+        11,   // Block size for threshold calculation
+        2,    // Constant subtracted from mean
+      );
+
+      // Step 2: Find contours
+      final (contours, hierarchy) = cv.findContours(
+        thresholdImage,
+        cv.RETR_EXTERNAL,  // Retrieve only external contours
+        cv.CHAIN_APPROX_SIMPLE,  // Compress horizontal, vertical segments
+      );
+
+      // Step 3: Filter and process contours to identify bowls
+      for (int i = 0; i < contours.length; i++) {
+        final contour = contours[i];
+        
+        // Calculate contour area
+        final double contourArea = cv.contourArea(contour);
+        
+        // Filter by area - bowls should be larger than jack but not too large
+        final double minBowlArea = (jackRadiusPixels * jackRadiusPixels * 3.14) * 1.5; // 1.5x jack area
+        final double maxBowlArea = (jackRadiusPixels * jackRadiusPixels * 3.14) * 8.0;  // 8x jack area
+        
+        if (contourArea < minBowlArea || contourArea > maxBowlArea) {
+          continue; // Skip contours that are too small or too large
+        }
+
+        // Check if contour is reasonably circular using circularity ratio
+        final double perimeter = cv.arcLength(contour, true);
+        final double circularity = 4 * 3.14159 * contourArea / (perimeter * perimeter);
+        
+        // Filter by circularity - bowls should be reasonably round (0.3 to 1.0)
+        if (circularity < 0.3) {
+          continue; // Skip non-circular shapes
+        }
+
+        // Step 4: Find center of contour using moments
+        final moments = cv.moments(contour);
+        if (moments.m00 == 0) continue; // Skip if moments calculation failed
+        
+        final double bowlCenterX = moments.m10 / moments.m00;
+        final double bowlCenterY = moments.m01 / moments.m00;
+
+        // Step 5: Find closest point on contour to jack center
+        double minDistanceToJack = double.infinity;
+        
+        // Contour points are stored as a list of cv.Point objects
+        for (int j = 0; j < contour.length; j++) {
+          final point = contour[j];  // Access point directly from list
+          final double dx = point.x.toDouble() - jackCenterX;
+          final double dy = point.y.toDouble() - jackCenterY;
+          final double distanceToJack = sqrt(dx * dx + dy * dy);
+          
+          if (distanceToJack < minDistanceToJack) {
+            minDistanceToJack = distanceToJack;
+          }
+        }
+
+        // Step 6: Calculate edge-to-edge distance
+        final double edgeToEdgePixels = minDistanceToJack - jackRadiusPixels;
+        
+        // Skip if bowl is too close to or overlapping with jack
+        if (edgeToEdgePixels <= 0) {
+          continue;
+        }
+
+        // Step 7: Convert to millimeters
+        final double edgeToEdgeMm = edgeToEdgePixels * scaleMmPerPixel;
+
+        // Add bowl result
+        bowlResults.add({
+          'distance': edgeToEdgeMm,
+          'x': bowlCenterX,
+          'y': bowlCenterY,
+          'area': contourArea,
+          'circularity': circularity,
+        });
+      }
+
+      // Clean up threshold image and hierarchy  
+      thresholdImage.dispose();
+      hierarchy.dispose();
+      
+      // Note: contours is a list of points, not Mat objects, so no need to dispose individual contours
+
+    } catch (e) {
+      // If contour analysis fails, return empty list
+      print('Error in bowl detection: $e');
+    }
+
+    // Step 8: Sort bowls by distance (closest first) and limit to reasonable number
+    bowlResults.sort((a, b) => a['distance'].compareTo(b['distance']));
+    
+    // Return up to 8 bowls (reasonable maximum for a game)
+    return bowlResults.take(8).toList();
   }
 
   /// Find the jack among detected circles using heuristics
@@ -134,16 +263,15 @@ class ImageProcessor {
     // Get all detected circles
     final List<Map<String, dynamic>> detectedCircles = [];
     
-    // HoughCircles returns data in format [x, y, radius] for each circle
-    // The cols value represents number of circles * 3 (x, y, r values)
-    final int numCircles = circles.cols ~/ 3;
+    // HoughCircles returns Mat with shape (1, N, 3) where N is number of circles
+    // Each circle has [x, y, radius] at channels 0, 1, 2
+    final int numCircles = circles.cols;
     
     for (int i = 0; i < numCircles; i++) {
-      // Extract circle parameters (x, y, radius)
-      // Each circle has 3 values: x, y, radius
-      final double x = circles.at<double>(0, i * 3);
-      final double y = circles.at<double>(0, i * 3 + 1);
-      final double radius = circles.at<double>(0, i * 3 + 2);
+      // Extract circle parameters using opencv_dart API format
+      final double x = circles.at<double>(0, i, 0);      // x coordinate
+      final double y = circles.at<double>(0, i, 1);      // y coordinate  
+      final double radius = circles.at<double>(0, i, 2); // radius
       
       detectedCircles.add({
         'x': x,
@@ -171,47 +299,58 @@ class ImageProcessor {
     };
   }
 
-  /// Create a MeasurementResult with real jack data and mock bowl data
-  /// This bridges the gap until full bowl detection is implemented
+  /// Create a MeasurementResult with real OpenCV detection data
+  /// Uses real jack detection and bowl contour analysis results
   static MeasurementResult createMeasurementResult(
     Map<String, dynamic> processingResult
   ) {
     if (!processingResult['success']) {
-      // Return error result with mock data
-      return MeasurementResult.withCapturedImage('');
+      // Return error result with empty bowls list
+      return MeasurementResult(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        timestamp: DateTime.now(),
+        bowls: [],
+        imagePath: '',
+      );
     }
 
     final String imagePath = processingResult['image_path'];
-    final double scale = processingResult['scale'];
     final Map<String, dynamic> jackCenter = processingResult['jack_center'];
+    final List<Map<String, dynamic>> bowlDetections = processingResult['bowls'] ?? [];
 
-    // Create mock bowls with realistic distances using the real scale
-    final List<BowlMeasurement> mockBowls = [
-      BowlMeasurement(
-        id: '1',
-        color: 'Red',
-        distanceFromJack: (45 * scale), // 45 pixels from jack
+    // Convert detected bowls to BowlMeasurement objects
+    final List<BowlMeasurement> realBowls = [];
+    
+    for (int i = 0; i < bowlDetections.length; i++) {
+      final bowlData = bowlDetections[i];
+      final double distanceMm = bowlData['distance'];
+      
+      // Assign colors based on detection order (could be enhanced with color analysis)
+      final List<String> bowlColors = ['Red', 'Blue', 'Green', 'Yellow', 'Black', 'White', 'Orange', 'Purple'];
+      final String bowlColor = i < bowlColors.length ? bowlColors[i] : 'Bowl ${i + 1}';
+      
+      realBowls.add(BowlMeasurement(
+        id: 'detected_bowl_${i + 1}',
+        color: bowlColor,
+        distanceFromJack: distanceMm / 10.0, // Convert mm to cm
+        rank: i + 1, // Already sorted by distance in _detectBowls
+      ));
+    }
+
+    // If no bowls detected, add a message bowl
+    if (realBowls.isEmpty) {
+      realBowls.add(BowlMeasurement(
+        id: 'no_bowls',
+        color: 'No Bowls',
+        distanceFromJack: 0.0,
         rank: 1,
-      ),
-      BowlMeasurement(
-        id: '2', 
-        color: 'Blue',
-        distanceFromJack: (67 * scale), // 67 pixels from jack
-        rank: 2,
-      ),
-      BowlMeasurement(
-        id: '3',
-        color: 'Green', 
-        distanceFromJack: (89 * scale), // 89 pixels from jack
-        rank: 3,
-      ),
-    ];
+      ));
+    }
 
     return MeasurementResult(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       timestamp: DateTime.now(),
-      jackPosition: [jackCenter['x'], jackCenter['y']],
-      bowls: mockBowls,
+      bowls: realBowls,
       imagePath: imagePath,
     );
   }
