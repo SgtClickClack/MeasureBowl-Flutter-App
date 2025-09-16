@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 interface FallbackViewProps {
   imageData: string;
   onCancel: () => void;
-  onManualComplete: (jackPosition: { x: number; y: number }, bowlPositions: Array<{ x: number; y: number; color: string }>) => void;
+  onManualComplete: (jackPosition: { x: number; y: number; radius: number }, bowlPositions: Array<{ x: number; y: number; color: string; radius: number }>) => void;
 }
 
 export function FallbackView({ imageData, onCancel, onManualComplete }: FallbackViewProps) {
-  const [step, setStep] = useState<'jack' | 'bowls'>('jack');
+  const [step, setStep] = useState<'jack' | 'bowls' | 'adjust-jack' | 'adjust-bowls'>('jack');
   const [jackPosition, setJackPosition] = useState<{ x: number; y: number } | null>(null);
+  const [jackRadius, setJackRadius] = useState(15);
   const [bowlPositions, setBowlPositions] = useState<Array<{ x: number; y: number; color: string }>>([]);
+  const [bowlRadius, setBowlRadius] = useState(20);
   const [selectedColor, setSelectedColor] = useState('Yellow');
 
   const handleImageClick = (event: React.MouseEvent<HTMLImageElement>) => {
@@ -22,15 +24,25 @@ export function FallbackView({ imageData, onCancel, onManualComplete }: Fallback
     if (step === 'jack') {
       setJackPosition({ x, y });
       setStep('bowls');
-    } else {
+    } else if (step === 'bowls') {
       setBowlPositions(prev => [...prev, { x, y, color: selectedColor }]);
     }
   };
 
   const handleComplete = () => {
     if (jackPosition && bowlPositions.length > 0) {
-      onManualComplete(jackPosition, bowlPositions);
+      const jackWithRadius = { ...jackPosition, radius: jackRadius };
+      const bowlsWithRadius = bowlPositions.map(bowl => ({ ...bowl, radius: bowlRadius }));
+      onManualComplete(jackWithRadius, bowlsWithRadius);
     }
+  };
+
+  const handleJackSizeConfirmed = () => {
+    setStep('bowls');
+  };
+
+  const handleSkipToBowls = () => {
+    setStep('bowls');
   };
 
   const colors = ['Yellow', 'Red', 'Black', 'Green', 'Blue'];
@@ -98,7 +110,7 @@ export function FallbackView({ imageData, onCancel, onManualComplete }: Fallback
               <circle 
                 cx={jackPosition.x} 
                 cy={jackPosition.y} 
-                r="15"
+                r={jackRadius}
                 fill="hsl(0, 0%, 100%)" 
                 stroke="hsl(217, 91%, 60%)" 
                 strokeWidth="3"
@@ -111,7 +123,7 @@ export function FallbackView({ imageData, onCancel, onManualComplete }: Fallback
                 key={index}
                 cx={bowl.x} 
                 cy={bowl.y} 
-                r="20"
+                r={bowlRadius}
                 fill={`hsl(${index * 60}, 70%, 50%)`}
                 stroke="hsl(0, 0%, 100%)" 
                 strokeWidth="2"
@@ -147,6 +159,39 @@ export function FallbackView({ imageData, onCancel, onManualComplete }: Fallback
           </div>
         </div>
       )}
+
+      {/* Radius Adjustment Controls */}
+      <div className="px-6 py-4 bg-card border-t border-border">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Jack Size (pixels)</label>
+            <input
+              type="range"
+              min="10"
+              max="30"
+              value={jackRadius}
+              onChange={(e) => setJackRadius(Number(e.target.value))}
+              className="w-full"
+              data-testid="input-jack-radius"
+            />
+            <span className="text-xs text-muted-foreground">Current: {jackRadius}px</span>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Bowl Size (pixels)</label>
+            <input
+              type="range"
+              min="15"
+              max="35"
+              value={bowlRadius}
+              onChange={(e) => setBowlRadius(Number(e.target.value))}
+              className="w-full"
+              data-testid="input-bowl-radius"
+            />
+            <span className="text-xs text-muted-foreground">Current: {bowlRadius}px</span>
+          </div>
+        </div>
+      </div>
 
       {/* Manual Identification Progress */}
       <div className="px-6 py-4 bg-card border-t border-border">

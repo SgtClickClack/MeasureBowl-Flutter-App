@@ -88,12 +88,12 @@ export default function Home() {
   };
 
   const handleManualComplete = async (
-    jackPosition: { x: number; y: number },
-    bowlPositions: Array<{ x: number; y: number; color: string }>
+    jackPosition: { x: number; y: number; radius: number },
+    bowlPositions: Array<{ x: number; y: number; color: string; radius: number }>
   ) => {
     // Create measurement data from manual identification using real distance calculations
-    const jack = { ...jackPosition, radius: 15 };
-    const bowls = bowlPositions.map(bowl => ({ ...bowl, radius: 20 }));
+    const jack = jackPosition;
+    const bowls = bowlPositions;
     
     const calculatedBowls = calculateManualDistances(jack, bowls);
     
