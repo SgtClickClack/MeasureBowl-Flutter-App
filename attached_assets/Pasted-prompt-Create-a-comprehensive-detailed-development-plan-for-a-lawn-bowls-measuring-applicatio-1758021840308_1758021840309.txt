@@ -1,0 +1,105 @@
+prompt: |
+  Create a comprehensive, detailed development plan for a lawn bowls measuring application.
+
+  **Project Title:** "One-Shot Bowls Measure" (working title)
+
+  **1. Project Overview & Vision**
+
+  * **Vision:** To create the simplest, most user-friendly mobile application for lawn bowlers to accurately measure the distance between bowls and the jack, eliminating the physical strain of manual measurement.
+  * **Core Value Proposition:** Instant, accurate measurements with a single button press. No manual aiming, edge-finding, or complex interactions.
+  * **Target Audience:** Lawn bowlers of all ages, with a primary focus on elderly players who may be tech-averse and have physical limitations.
+  * **Success Metrics:**
+      * **Simplicity:** Time from app open to measurement result is under 5 seconds.
+      * **Accuracy:** Measurements are consistently within a tolerable margin of error compared to a physical tape measure (e.g., +/- 2-3mm).
+      * **Adoption:** Positive reviews from elderly users specifically mentioning its ease of use.
+
+  **2. Core Functionality & User Flow**
+
+  The primary user flow is designed to be as frictionless as possible, avoiding the pitfalls of existing apps like "Bowlometer".
+
+  * **Step 1: Launch App:** The user opens the app. The camera view immediately activates and fills the screen. No menus or startup screens.
+  * **Step 2: Frame the Shot:** The user holds the phone above the jack and bowls, ensuring all relevant objects are visible in the frame. A simple on-screen guide could suggest an optimal height or angle (e.g., "Hold phone level, about waist-high").
+  * **Step 3: Capture & Calculate:** The user presses a single, large, centrally-located "Measure" button.
+      * The app captures one static, high-resolution image. This is crucial as it freezes the scene, meaning any movement by the user *after* the press does not affect the measurement calculations.
+      * An activity indicator (e.g., a "Calculating...") appears.
+  * **Step 4: Display Results:** Within 1-2 seconds, the app displays the results.
+      * The captured image is shown as the background.
+      * Lines are drawn from the jack to the closest point of each measured bowl.
+      * The calculated distance is clearly displayed next to each line in large, high-contrast text.
+      * A ranked list of results (e.g., "Yellow Bowl: 5.2 cm", "Black Bowl: 7.8 cm") is shown at the top or bottom of the screen.
+  * **Step 5: Reset:** A large "Measure Again" button allows the user to instantly return to the live camera view to start over.
+
+  **3. Technical Architecture & Implementation Details**
+
+  This section details the underlying technology required to achieve the one-shot measurement.
+
+  * **Platform:** A cross-platform framework is essential for targeting all phones.
+      * **Recommendation:** **Flutter**. Its compiled performance is excellent for handling image processing tasks, and its widget-based UI is ideal for creating a simple, accessible interface. **React Native** is a viable alternative.
+  * **Core Technology: Computer Vision**
+      * **Library:** **OpenCV**. This is the industry-standard library for image processing. It can be integrated into Flutter via native platform channels or existing plugins.
+      * **Image Processing Pipeline (Executed after the "Measure" button is pressed):**
+          1.  **Image Pre-processing:** Apply filters to the captured image to improve object detection, such as grayscale conversion, blur (to reduce noise), and edge enhancement (Canny edge detection).
+          2.  **Jack Detection (Reference Object):**
+              * **Algorithm:** **Hough Circle Transform**. This algorithm is highly effective at detecting perfect circles.
+              * **Process:** The app identifies the jack in the image. Since the jack has a standard, known real-world diameter (e.g., 63.5mm), its size in pixels on the captured image becomes the critical **scale reference** for all other calculations.
+          3.  **Bowl Detection:**
+              * **Algorithm:** **Ellipse Fitting/Detection**. From an overhead camera angle, the oblate bowls will appear as ellipses. The algorithm will identify all elliptical shapes that fit the size profile of a bowl.
+              * **Process:** The app detects the position, size, and orientation of each bowl in the image.
+          4.  **Perspective Correction & Distance Calculation:** This is the most critical step for accuracy.
+              * **Method:** Using the jack as a known object on the ground plane, the app can compute a **homography matrix**. This is a transformation that maps the distorted 2D image points to a corrected, top-down 2D plane, effectively removing perspective distortion.
+              * **Calculation:**
+                  a. Project the pixel coordinates of the jack and all bowls onto this corrected plane.
+                  b. Using the scale derived from the jack's known diameter (`Scale (mm/pixel) = RealJackDiameter / PixelJackDiameter`), calculate the real-world distance between the edge of the jack and the nearest edge of each bowl on that corrected plane.
+  * **Fallback Mechanism (for failed detection):**
+      * If the automatic detection fails (due to poor lighting, unusual bowl colors, etc.), the app should not crash. Instead, it should transition to a manual identification mode.
+      * **Flow:** An overlay appears on the captured image: "Couldn't find the bowls. Please tap the Jack, then tap each bowl." The user taps to identify, and the app uses those points as hints to lock onto the nearest object and re-run the measurement. This maintains simplicity while ensuring robustness.
+
+  **4. Development Phases & Milestones**
+
+  A phased approach to build, test, and refine the application.
+
+  * **Phase 1: Proof of Concept (2-3 Weeks)**
+      * **Goal:** Validate the core measurement algorithm.
+      * **Tasks:**
+          * Set up a Flutter project with OpenCV integration.
+          * Create a simple app that can only process pre-taken photos from the gallery.
+          * Implement and test the Hough Circle Transform (for jack) and Ellipse Fitting (for bowls).
+          * Develop the initial distance calculation logic using the jack as a scale reference.
+      * **Deliverable:** A functional prototype that can accurately measure distances in a test image.
+
+  * **Phase 2: Core Application Build (3-4 Weeks)**
+      * **Goal:** Develop the primary user interface and camera integration.
+      * **Tasks:**
+          * Build the live camera view that opens on app launch.
+          * Implement the one-click capture and processing flow.
+          * Design and build the results screen with overlaid distances and a ranked list.
+          * Implement the simple "Measure Again" loop.
+      * **Deliverable:** An alpha version of the app that performs end-to-end measurements.
+
+  * **Phase 3: Accuracy Refinement & Usability Testing (3-4 Weeks)**
+      * **Goal:** Ensure the app is accurate and genuinely easy for the target audience to use.
+      * **Tasks:**
+          * Implement and refine the perspective correction (homography) algorithm.
+          * Test extensively under different conditions: bright sunlight, shadows, different green speeds, various bowl colors.
+          * Conduct User Acceptance Testing (UAT) with local lawn bowlers, especially seniors. Watch them use it without instruction to identify friction points.
+          * Calibrate the algorithm against physical tape measures and document its margin of error.
+          * Build the fallback tap-to-identify mechanism.
+      * **Deliverable:** A feature-complete beta version.
+
+  * **Phase 4: Polish and Deployment (2 Weeks)**
+      * **Goal:** Prepare the app for public release.
+      * **Tasks:**
+          * Finalize UI/UX based on tester feedback (e.g., increase font sizes, improve contrast).
+          * Add accessibility features (e.g., compatibility with screen readers).
+          * Create app icons, splash screens, and prepare store listings.
+          * Submit to the Apple App Store and Google Play Store.
+      * **Deliverable:** The final, published application.
+
+  **5. Technology Stack Summary**
+
+  * **Cross-Platform Framework:** Flutter
+  * **Programming Language:** Dart
+  * **Image Processing:** OpenCV
+  * **IDE:** Cursor / VS Code with Flutter extension
+  * **Source Control:** Git (e.g., GitHub)
+  * **Deployment:** Replit (for development/testing), Apple App Store, Google Play Store
