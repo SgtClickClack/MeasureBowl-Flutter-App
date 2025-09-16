@@ -1,10 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../models/measurement_result.dart';
+import '../services/image_processor.dart';
 import 'results_view.dart';
+
+/// Top-level function for isolate-based image processing
+/// This function runs in a separate isolate to avoid blocking the UI thread
+Future<Map<String, dynamic>> _processImageInIsolate(String imagePath) async {
+  return await ImageProcessor.processImage(imagePath);
+}
 
 /// Camera view widget that displays the camera feed placeholder and measure button
 class CameraView extends StatefulWidget {
@@ -19,6 +27,7 @@ class _CameraViewState extends State<CameraView> {
   Future<void>? _initializeControllerFuture;
   List<CameraDescription>? _cameras;
   bool _isMeasuring = false;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -71,10 +80,10 @@ class _CameraViewState extends State<CameraView> {
     super.dispose();
   }
 
-  /// Handle the measure button press - now captures image
+  /// Handle the measure button press - capture image and process with OpenCV
   Future<void> _onMeasurePressed() async {
     // Prevent multiple simultaneous measurements
-    if (_isMeasuring || _controller == null) return;
+    if (_isMeasuring || _isProcessing || _controller == null) return;
 
     setState(() {
       _isMeasuring = true;
@@ -99,14 +108,39 @@ class _CameraViewState extends State<CameraView> {
       // Copy the image to our directory
       await imageFile.saveTo(filePath);
 
-      // Create measurement results with captured image
-      final measurementResults = MeasurementResult.fromCapturedImage(
-        imagePath: filePath,
-      );
-
       setState(() {
         _isMeasuring = false;
+        _isProcessing = true;
       });
+
+      // Process the captured image with OpenCV in a separate isolate
+      // This prevents UI blocking during heavy image processing
+      final Map<String, dynamic> processingResult = 
+          await compute(_processImageInIsolate, filePath);
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      // Check if processing was successful
+      if (!processingResult['success']) {
+        // Show error message to user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(processingResult['error'] ?? 'Processing failed'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Create measurement results with OpenCV processing data
+      final measurementResults = ImageProcessor.createMeasurementResult(
+        processingResult,
+      );
 
       // Navigate to results view
       if (mounted) {
@@ -119,16 +153,17 @@ class _CameraViewState extends State<CameraView> {
         );
       }
     } catch (e) {
-      debugPrint('Error capturing image: $e');
+      debugPrint('Error in measurement process: $e');
       setState(() {
         _isMeasuring = false;
+        _isProcessing = false;
       });
       
       // Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error capturing image: ${e.toString()}'),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -294,11 +329,11 @@ class _CameraViewState extends State<CameraView> {
                   onTap: _onMeasurePressed,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    width: _isMeasuring ? 100 : 120,
-                    height: _isMeasuring ? 100 : 120,
+                    width: (_isMeasuring || _isProcessing) ? 100 : 120,
+                    height: (_isMeasuring || _isProcessing) ? 100 : 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isMeasuring 
+                      color: (_isMeasuring || _isProcessing) 
                           ? Colors.blue[300] 
                           : Colors.blue[600],
                       boxShadow: [
@@ -313,7 +348,7 @@ class _CameraViewState extends State<CameraView> {
                         width: 4,
                       ),
                     ),
-                    child: _isMeasuring
+                    child: (_isMeasuring || _isProcessing)
                         ? const CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 3,
@@ -334,7 +369,11 @@ class _CameraViewState extends State<CameraView> {
               left: 0,
               right: 0,
               child: Text(
-                _isMeasuring ? 'Measuring...' : 'Tap to measure distances',
+                _isProcessing 
+                    ? 'Processing with OpenCV...'
+                    : _isMeasuring 
+                        ? 'Capturing image...'
+                        : 'Tap to measure distances',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white70,

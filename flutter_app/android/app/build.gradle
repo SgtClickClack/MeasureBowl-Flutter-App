@@ -42,11 +42,23 @@ android {
 
     defaultConfig {
         applicationId "com.example.lawn_bowls_measure"
-        // Camera plugin requires minSdkVersion 21
+        // Camera plugin and opencv_dart require minSdkVersion 21
         minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        
+        // NDK configuration for opencv_dart native libraries
+        externalNativeBuild {
+            cmake {
+                cppFlags "-frtti -fexceptions"
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+        
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {
