@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(220, 20%, 14%);
+  --foreground: hsl(0, 0%, 98%);
+  --card: hsl(220, 20%, 16%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --popover: hsl(220, 20%, 16%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(220, 14%, 22%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --muted: hsl(220, 14%, 22%);
+  --muted-foreground: hsl(217, 10%, 65%);
+  --accent: hsl(142, 76%, 36%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --border: hsl(217, 32%, 20%);
+  --input: hsl(217, 32%, 20%);
+  --ring: hsl(217, 91%, 60%);
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(38, 92%, 50%);
+  --radius: 0.75rem;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Georgia', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00), 0px 1px 2px -1px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00), 0px 1px 2px -1px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00), 0px 2px 4px -1px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00), 0px 4px 6px -1px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00), 0px 8px 10px -1px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(220, 20%, 14%);
+  --foreground: hsl(0, 0%, 98%);
+  --card: hsl(220, 20%, 16%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --popover: hsl(220, 20%, 16%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(220, 14%, 22%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --muted: hsl(220, 14%, 22%);
+  --muted-foreground: hsl(217, 10%, 65%);
+  --accent: hsl(142, 76%, 36%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --border: hsl(217, 32%, 20%);
+  --input: hsl(217, 32%, 20%);
+  --ring: hsl(217, 91%, 60%);
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(38, 92%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.camera-viewfinder {
+  background: linear-gradient(45deg, 
+      hsl(220, 20%, 16%) 25%, 
+      transparent 25%), 
+      linear-gradient(-45deg, 
+      hsl(220, 20%, 16%) 25%, 
+      transparent 25%), 
+      linear-gradient(45deg, 
+      transparent 75%, 
+      hsl(220, 20%, 16%) 75%), 
+      linear-gradient(-45deg, 
+      transparent 75%, 
+      hsl(220, 20%, 16%) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.measuring-overlay {
+  background: linear-gradient(135deg, 
+      hsla(217, 91%, 60%, 0.1) 0%, 
+      hsla(142, 76%, 36%, 0.1) 100%);
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.measurement-line {
+  stroke: hsl(38, 92%, 50%);
+  stroke-width: 3;
+  stroke-dasharray: 5,5;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-ring, .fade-in {
+    animation: none;
+  }
+}
