@@ -1,0 +1,33 @@
+prompt: |
+  The `image_processor.dart` service in my Flutter app successfully uses OpenCV to detect the jack, calculate a real-world scale (`mm_per_pixel`), and keeps the UI responsive by running in a background isolate. The bowl measurement data, however, is still mocked.
+
+  The final task is to complete the pipeline by replacing the mock data with real bowl detection and distance calculations. This will involve using contour analysis to find the bowls in the image.
+
+  **Requirements:**
+
+  1.  **Extend the `ImageProcessor` Service:**
+      * Locate the section in the `processImage` method *after* the jack has been successfully detected and the scale has been calculated.
+      * The following logic should be implemented in that section.
+
+  2.  **Implement Bowl Detection using Contour Analysis:**
+      * **Thresholding:** Before finding contours, apply a binary threshold to the grayscale image (e.g., `ImgProc.adaptiveThreshold`). This will create a clean black-and-white image that makes it easier to find object outlines.
+      * **Find Contours:** Use OpenCV's `ImgProc.findContours` function on the thresholded image to get the outlines of all shapes.
+      * **Filter Contours:** Iterate through all found contours and filter them to identify only the ones that are likely to be bowls. A contour should be kept if it meets criteria like:
+          * **Area:** It must be within a reasonable size range (e.g., `ImgProc.contourArea`), larger than the jack but not excessively large.
+          * **Shape:** It should be reasonably "circular" or "elliptical."
+
+  3.  **Calculate Edge-to-Edge Distance:**
+      * For each valid bowl contour identified:
+          * Find the point on the bowl's contour that is closest to the center of the detected jack.
+          * Calculate the distance in **pixels** from the jack's center to this closest point.
+          * Subtract the jack's radius in pixels from this value to get the true edge-to-edge pixel distance.
+
+  4.  **Convert to Real-World Measurement:**
+      * Use the `scale_mm_per_pixel` (already calculated from the jack detection step) to convert the final pixel distance into millimeters.
+
+  5.  **Update the Return Data Structure:**
+      * Create a simple data class (e.g., `BowlResult`) to hold the final measurement data for each bowl (e.g., distance in mm, position on screen).
+      * The `processImage` method should now return a sorted `List<BowlResult>`, ranked from the closest bowl to the furthest.
+      * Ensure the `ResultsView` is updated to consume this new list of real data objects.
+
+  Please modify the `image_processor.dart` file to include this complete bowl detection and measurement logic.
