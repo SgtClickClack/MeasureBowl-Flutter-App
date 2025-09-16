@@ -1,0 +1,35 @@
+prompt: |
+  I have successfully integrated the native camera into my Flutter app. The `CameraView` now captures an image and passes the file path to the `ResultsView`, which currently displays it with mock data.
+
+  The next task is to implement the core OpenCV logic to process the captured image. This initial implementation will focus on detecting the jack and establishing the measurement scale, replacing the mock data with real calculations.
+
+  **Requirements:**
+
+  1.  **Add OpenCV Dependency:**
+      * Modify the `pubspec.yaml` file to include a suitable Flutter OpenCV plugin (e.g., `flutter_opencv`).
+      * Ensure you run `flutter pub get` to install it.
+
+  2.  **Create an Image Processing Service:**
+      * Create a new Dart file named `image_processor.dart`.
+      * Inside this file, define a class or function that will contain all the OpenCV logic. This will keep the processing code separate from the UI code.
+      * Create an asynchronous method, for example, `Future<Map<String, dynamic>> processImage(String imagePath)`.
+
+  3.  **Implement the OpenCV Pipeline within the Service:**
+      * **Load the Image:** The `processImage` method should take the image file path as input and use the OpenCV plugin to load it into a processable format (e.g., a `Mat` object).
+      * **Pre-processing:**
+          * Convert the image to **grayscale**.
+          * Apply a **Gaussian Blur** to reduce image noise and improve detection accuracy.
+      * **Jack Detection:**
+          * Use the **Hough Circle Transform** (`HoughCircles`) algorithm on the pre-processed image to detect circles.
+          * Filter the results to find the circle that is most likely the jack.
+      * **Scale Calculation:**
+          * Once the jack is identified, get its radius in pixels.
+          * Calculate the real-world scale using the standard jack diameter of 63.5 mm: `scale_mm_per_pixel = 63.5 / (jack_pixel_radius * 2)`.
+      * **Return Data:** The method should return a data structure (like a Map) containing the processed results, including the calculated scale and the jack's position. For now, it can still return mock bowl data until the next step.
+
+  4.  **Integrate the Service into the UI:**
+      * In the `CameraView` widget, after a picture is taken, call the new `processImage()` method.
+      * While the image is being processed, display a `CircularProgressIndicator` overlay to inform the user.
+      * Once the results are returned from the service, pass this new, partially-real data to the `ResultsView`.
+
+  Please generate the code for the `image_processor.dart` service and show how to modify the `CameraView` to call this service and handle the loading state.
