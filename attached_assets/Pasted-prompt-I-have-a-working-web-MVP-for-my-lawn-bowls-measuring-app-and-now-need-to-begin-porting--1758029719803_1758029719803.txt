@@ -1,0 +1,30 @@
+prompt: |
+  I have a working web MVP for my lawn bowls measuring app and now need to begin porting it to a mobile app using Flutter.
+
+  Your task is to generate the foundational code for the Flutter application. This initial step will focus *only* on creating the static UI shell and project structure. No camera functionality or OpenCV logic is required yet.
+
+  **Requirements:**
+
+  1.  **Create a new Flutter Project Structure:**
+      * Set up a clean Flutter application with a standard project layout (`lib`, `main.dart`, etc.).
+      * Ensure the project has null safety enabled.
+
+  2.  **Implement the Main UI Shell:**
+      * Create a `main.dart` file that initializes the app.
+      * The home screen of the app should be a `CameraView` widget.
+
+  3.  **Build the `CameraView` Widget:**
+      * This will be a stateful widget.
+      * The background should be a simple black container, acting as a placeholder for the future camera feed.
+      * Create a large, circular "Measure" button and overlay it near the bottom-center of the screen.
+      * The button should be designed for accessibility: large touch target, high contrast, and a clear icon (e.g., a camera shutter or circle icon).
+      * When this button is pressed, it should navigate to the `ResultsView` screen. For now, it can pass mock data.
+
+  4.  **Build the `ResultsView` Widget:**
+      * This widget will display the measurement results.
+      * It should take a captured image (use a placeholder asset for now) and a list of measurement results as input.
+      * The background of the view should be the placeholder image.
+      * Overlay a semi-transparent panel at the bottom of the screen to display a ranked list of the bowl distances (e.g., "1. Bowl A: 5.2 cm", "2. Bowl B: 10.1 cm"). Use large, readable fonts.
+      * Include a prominent "Measure Again" button that navigates the user back to the `CameraView`.
+
+  Please generate all the necessary Dart code for these widgets, ensuring the code is well-commented and follows best practices for a scalable Flutter application.
