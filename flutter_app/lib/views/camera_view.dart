@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import '../models/measurement_result.dart';
 import '../services/image_processor.dart';
 import 'results_view.dart';
+import 'help_view.dart';
 
 /// Top-level function for isolate-based image processing
 /// This function runs in a separate isolate to avoid blocking the UI thread
@@ -359,6 +360,40 @@ class _CameraViewState extends State<CameraView> {
                             size: 40,
                           ),
                   ),
+                ),
+              ),
+            ),
+
+            // Help button in top-right corner
+            Positioned(
+              top: 20,
+              right: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const HelpView(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.help_outline,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  padding: const EdgeInsets.all(12),
                 ),
               ),
             ),
