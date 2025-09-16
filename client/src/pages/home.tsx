@@ -3,9 +3,10 @@ import { CameraView } from '@/components/camera-view';
 import { ProcessingView } from '@/components/processing-view';
 import { ResultsView } from '@/components/results-view';
 import { FallbackView } from '@/components/fallback-view';
-import { processMeasurement } from '@/lib/opencv-utils';
+import { processMeasurement, calculateManualDistances } from '@/lib/opencv-utils';
 import { AppView, MeasurementData } from '@/types/measurement';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<AppView>('camera');
@@ -13,40 +14,30 @@ export default function Home() {
   const [measurementData, setMeasurementData] = useState<MeasurementData | null>(null);
   const { toast } = useToast();
 
-  const handleCapture = async (imageData: string) => {
+  const handleCapture = (imageData: string) => {
     setCapturedImage(imageData);
     setCurrentView('processing');
-
-    try {
-      // Process the image with OpenCV
-      const result = await processMeasurement(imageData);
-      
-      if (result) {
-        setMeasurementData(result);
-        setCurrentView('results');
-      } else {
-        // Fallback to manual identification
-        setCurrentView('fallback');
-        toast({
-          title: "Manual Identification Required",
-          description: "Automatic detection failed. Please identify objects manually.",
-          variant: "default",
-        });
-      }
-    } catch (error) {
-      console.error('Processing error:', error);
-      setCurrentView('fallback');
-      toast({
-        title: "Processing Error",
-        description: "Failed to process image automatically. Please try manual identification.",
-        variant: "destructive",
-      });
-    }
   };
 
-  const handleProcessingComplete = () => {
-    if (measurementData) {
-      setCurrentView('results');
+  const handleProcessingComplete = async (result: MeasurementData) => {
+    setMeasurementData(result);
+    setCurrentView('results');
+    
+    // Save measurement to database
+    try {
+      await saveMeasurementToDatabase(result);
+      toast({
+        title: "Measurement Saved",
+        description: "Your measurement has been saved to history.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Failed to save measurement:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save measurement to history.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -55,7 +46,7 @@ export default function Home() {
     setCurrentView('fallback');
     toast({
       title: "Processing Failed",
-      description: error,
+      description: "Automatic detection failed. Please identify objects manually.",
       variant: "destructive",
     });
   };
@@ -76,33 +67,63 @@ export default function Home() {
     setCapturedImage('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='); // Minimal placeholder image
   };
 
-  const handleManualComplete = (
+  const saveMeasurementToDatabase = async (data: MeasurementData) => {
+    // Save measurement
+    const measurementPayload = {
+      imageData: data.imageData,
+      jackPosition: JSON.stringify(data.jackPosition),
+      bowlCount: data.bowls.length,
+      bowls: data.bowls.map(bowl => ({
+        color: bowl.color,
+        position: JSON.stringify(bowl.position),
+        distanceFromJack: bowl.distanceFromJack,
+        rank: bowl.rank
+      }))
+    };
+    
+    await apiRequest('POST', '/api/measurements', measurementPayload);
+    
+    // Invalidate measurements cache
+    queryClient.invalidateQueries({ queryKey: ['/api/measurements'] });
+  };
+
+  const handleManualComplete = async (
     jackPosition: { x: number; y: number },
     bowlPositions: Array<{ x: number; y: number; color: string }>
   ) => {
-    // Create measurement data from manual identification
+    // Create measurement data from manual identification using real distance calculations
+    const jack = { ...jackPosition, radius: 15 };
+    const bowls = bowlPositions.map(bowl => ({ ...bowl, radius: 20 }));
+    
+    const calculatedBowls = calculateManualDistances(jack, bowls);
+    
     const manualData: MeasurementData = {
       id: `manual-${Date.now()}`,
       imageData: capturedImage,
       timestamp: new Date(),
-      jackPosition: { ...jackPosition, radius: 15 },
-      bowls: bowlPositions.map((bowl, index) => ({
-        id: `manual-bowl-${index}`,
-        color: bowl.color,
-        position: { ...bowl, radius: 20 },
-        distanceFromJack: Math.random() * 20 + 5, // Placeholder calculation
-        rank: index + 1,
-      })).sort((a, b) => a.distanceFromJack - b.distanceFromJack)
-        .map((bowl, index) => ({ ...bowl, rank: index + 1 })),
+      jackPosition: jack,
+      bowls: calculatedBowls,
     };
 
     setMeasurementData(manualData);
     setCurrentView('results');
-    toast({
-      title: "Manual Identification Complete",
-      description: "Successfully identified bowls and jack manually.",
-      variant: "default",
-    });
+    
+    // Save measurement to database
+    try {
+      await saveMeasurementToDatabase(manualData);
+      toast({
+        title: "Manual Identification Complete",
+        description: "Successfully calculated distances and saved to history.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Failed to save measurement:', error);
+      toast({
+        title: "Calculation Complete",
+        description: "Distances calculated but could not save to history.",
+        variant: "default",
+      });
+    }
   };
 
   const renderCurrentView = () => {
@@ -112,6 +133,7 @@ export default function Home() {
       case 'processing':
         return (
           <ProcessingView 
+            imageData={capturedImage}
             onComplete={handleProcessingComplete}
             onError={handleProcessingError}
           />

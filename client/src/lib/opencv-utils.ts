@@ -177,6 +177,36 @@ export function calculateDistances(
     .map((bowl, index) => ({ ...bowl, rank: index + 1 }));
 }
 
+export function calculateManualDistances(
+  jack: { x: number; y: number; radius: number },
+  bowls: Array<{ x: number; y: number; color: string; radius: number }>
+): DetectedBowl[] {
+  // Calculate scale: pixels per millimeter based on jack size
+  const pixelsPerMM = (jack.radius * 2) / JACK_DIAMETER_MM;
+
+  return bowls.map((bowl, index) => {
+    const dx = bowl.x - jack.x;
+    const dy = bowl.y - jack.y;
+    
+    // Distance between circle edges, not centers
+    const centerDistance = Math.sqrt(dx * dx + dy * dy);
+    const edgeDistance = Math.max(0, centerDistance - jack.radius - bowl.radius);
+    
+    // Convert to millimeters, then to centimeters
+    const distanceInMM = edgeDistance / pixelsPerMM;
+    const distanceInCM = distanceInMM / 10;
+
+    return {
+      id: `manual-bowl-${index}`,
+      color: bowl.color,
+      position: { x: bowl.x, y: bowl.y, radius: bowl.radius },
+      distanceFromJack: Math.round(distanceInCM * 10) / 10, // Round to 1 decimal
+      rank: 0 // Will be set after sorting
+    };
+  }).sort((a, b) => a.distanceFromJack - b.distanceFromJack)
+    .map((bowl, index) => ({ ...bowl, rank: index + 1 }));
+}
+
 export async function processMeasurement(imageData: string): Promise<MeasurementData | null> {
   const detection = await processImageWithOpenCV(imageData);
   

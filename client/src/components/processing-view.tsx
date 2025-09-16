@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Brain, Check, Clock, Loader2 } from 'lucide-react';
-import { ProcessingStep } from '@/types/measurement';
+import { ProcessingStep, MeasurementData } from '@/types/measurement';
+import { processMeasurement } from '@/lib/opencv-utils';
 
 interface ProcessingViewProps {
-  onComplete: () => void;
+  imageData: string;
+  onComplete: (result: MeasurementData) => void;
   onError: (error: string) => void;
 }
 
-export function ProcessingView({ onComplete, onError }: ProcessingViewProps) {
+export function ProcessingView({ imageData, onComplete, onError }: ProcessingViewProps) {
   const [steps, setSteps] = useState<ProcessingStep[]>([
     { name: 'Circle Detection', status: 'processing', message: 'Detecting circular objects...' },
     { name: 'Bowl Recognition', status: 'pending', message: 'Identifying bowls and jack...' },
@@ -15,46 +17,60 @@ export function ProcessingView({ onComplete, onError }: ProcessingViewProps) {
   ]);
 
   useEffect(() => {
-    // Simulate processing steps
-    const processSteps = async () => {
-      // Step 1: Circle Detection
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSteps(prev => prev.map((step, index) => 
-        index === 0 
-          ? { ...step, status: 'complete', message: 'Circles detected successfully' }
-          : index === 1
-          ? { ...step, status: 'processing', message: 'Analyzing bowl positions...' }
-          : step
-      ));
-
-      // Step 2: Bowl Recognition
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setSteps(prev => prev.map((step, index) => 
-        index === 1 
-          ? { ...step, status: 'complete', message: 'Bowls and jack identified' }
-          : index === 2
-          ? { ...step, status: 'processing', message: 'Computing distances...' }
-          : step
-      ));
-
-      // Step 3: Distance Calculation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSteps(prev => prev.map((step, index) => 
-        index === 2 
-          ? { ...step, status: 'complete', message: 'Measurements complete' }
-          : step
-      ));
-
-      // Complete processing
-      setTimeout(() => {
-        onComplete();
-      }, 500);
+    const processImage = async () => {
+      try {
+        // Step 1: Circle Detection
+        setSteps(prev => prev.map((step, index) => 
+          index === 0 
+            ? { ...step, status: 'processing', message: 'Detecting circular objects...' }
+            : step
+        ));
+        
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UI feedback
+        
+        // Step 2: Start actual OpenCV processing
+        setSteps(prev => prev.map((step, index) => 
+          index === 0 
+            ? { ...step, status: 'complete', message: 'Circles detected successfully' }
+            : index === 1
+            ? { ...step, status: 'processing', message: 'Analyzing bowl positions...' }
+            : step
+        ));
+        
+        const result = await processMeasurement(imageData);
+        
+        // Step 3: Distance Calculation
+        setSteps(prev => prev.map((step, index) => 
+          index === 1 
+            ? { ...step, status: 'complete', message: 'Bowls and jack identified' }
+            : index === 2
+            ? { ...step, status: 'processing', message: 'Computing distances...' }
+            : step
+        ));
+        
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UI feedback
+        
+        setSteps(prev => prev.map((step, index) => 
+          index === 2 
+            ? { ...step, status: 'complete', message: 'Measurements complete' }
+            : step
+        ));
+        
+        if (result) {
+          setTimeout(() => {
+            onComplete(result);
+          }, 500);
+        } else {
+          onError('Failed to detect jack and bowls automatically');
+        }
+      } catch (error) {
+        console.error('OpenCV processing error:', error);
+        onError(error instanceof Error ? error.message : 'Processing failed');
+      }
     };
 
-    processSteps().catch((error) => {
-      onError(error instanceof Error ? error.message : 'Processing failed');
-    });
-  }, [onComplete, onError]);
+    processImage();
+  }, [imageData, onComplete, onError]);
 
   const getStepIcon = (step: ProcessingStep) => {
     switch (step.status) {

@@ -1,5 +1,6 @@
-import { type Measurement, type BowlMeasurement, type InsertMeasurement, type InsertBowlMeasurement } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { type Measurement, type BowlMeasurement, type InsertMeasurement, type InsertBowlMeasurement, measurements, bowlMeasurements } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Measurement operations
@@ -12,48 +13,48 @@ export interface IStorage {
   getBowlMeasurementsByMeasurementId(measurementId: string): Promise<BowlMeasurement[]>;
 }
 
-export class MemStorage implements IStorage {
-  private measurements: Map<string, Measurement>;
-  private bowlMeasurements: Map<string, BowlMeasurement>;
-
-  constructor() {
-    this.measurements = new Map();
-    this.bowlMeasurements = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async createMeasurement(insertMeasurement: InsertMeasurement): Promise<Measurement> {
-    const id = randomUUID();
-    const measurement: Measurement = { 
-      ...insertMeasurement, 
-      id,
-      timestamp: new Date(),
-      bowlCount: insertMeasurement.bowlCount ?? 0
-    };
-    this.measurements.set(id, measurement);
+    const [measurement] = await db
+      .insert(measurements)
+      .values({
+        ...insertMeasurement,
+        bowlCount: insertMeasurement.bowlCount ?? 0
+      })
+      .returning();
     return measurement;
   }
 
   async getMeasurement(id: string): Promise<Measurement | undefined> {
-    return this.measurements.get(id);
+    const [measurement] = await db
+      .select()
+      .from(measurements)
+      .where(eq(measurements.id, id));
+    return measurement || undefined;
   }
 
   async getAllMeasurements(): Promise<Measurement[]> {
-    return Array.from(this.measurements.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return await db
+      .select()
+      .from(measurements)
+      .orderBy(desc(measurements.timestamp));
   }
 
   async createBowlMeasurement(insertBowlMeasurement: InsertBowlMeasurement): Promise<BowlMeasurement> {
-    const id = randomUUID();
-    const bowlMeasurement: BowlMeasurement = { ...insertBowlMeasurement, id };
-    this.bowlMeasurements.set(id, bowlMeasurement);
+    const [bowlMeasurement] = await db
+      .insert(bowlMeasurements)
+      .values(insertBowlMeasurement)
+      .returning();
     return bowlMeasurement;
   }
 
   async getBowlMeasurementsByMeasurementId(measurementId: string): Promise<BowlMeasurement[]> {
-    return Array.from(this.bowlMeasurements.values())
-      .filter(bowl => bowl.measurementId === measurementId)
-      .sort((a, b) => a.rank - b.rank);
+    return await db
+      .select()
+      .from(bowlMeasurements)
+      .where(eq(bowlMeasurements.measurementId, measurementId))
+      .orderBy(bowlMeasurements.rank);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

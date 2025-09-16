@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, real, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -13,12 +13,23 @@ export const measurements = pgTable("measurements", {
 
 export const bowlMeasurements = pgTable("bowl_measurements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  measurementId: varchar("measurement_id").notNull(),
+  measurementId: varchar("measurement_id").notNull().references(() => measurements.id, { onDelete: "cascade" }),
   color: text("color").notNull(),
   position: text("position").notNull(), // JSON string {x, y, radius}
   distanceFromJack: real("distance_from_jack").notNull(), // in centimeters
   rank: integer("rank").notNull(),
 });
+
+export const measurementsRelations = relations(measurements, ({ many }) => ({
+  bowls: many(bowlMeasurements),
+}));
+
+export const bowlMeasurementsRelations = relations(bowlMeasurements, ({ one }) => ({
+  measurement: one(measurements, {
+    fields: [bowlMeasurements.measurementId],
+    references: [measurements.id],
+  }),
+}));
 
 export const insertMeasurementSchema = createInsertSchema(measurements).pick({
   imageData: true,
