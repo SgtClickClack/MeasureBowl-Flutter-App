@@ -1,8 +1,17 @@
 name: lawn_bowls_measure
-description: A Flutter mobile app for measuring distances between lawn bowls and the jack using computer vision.
+description: A Flutter mobile app for measuring distances between lawn bowls and the jack using computer vision. Stand 'n' Measure.
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+13
+
+hooks:
+  user_defines:
+    dartcv4:
+      include_modules:
+        - core
+        - calib3d     # For homography, camera calibration
+        - contrib     # This is the key: enables aruco
+        - imgproc     # For getPerspectiveTransform
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -12,25 +21,38 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  camera: ^0.10.5+5
+  camera: ^0.11.0
   path_provider: ^2.1.1
   path: ^1.8.3
   opencv_dart: ^1.0.4
+  permission_handler: ^12.0.0
+  provider: ^6.0.5
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.5
+  flutter_riverpod: ^2.5.1
+  hooks_riverpod: ^2.5.1
+  package_info_plus: ^5.0.1
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
   
   assets:
     - assets/icon/
+    - assets/test_images/
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/icon.png"
+  image_path: "../logo.jpg"
   min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "../logo.jpg"

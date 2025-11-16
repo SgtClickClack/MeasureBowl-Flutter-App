@@ -1,0 +1,29 @@
+# Doppler Configuration for MeasureBowl
+# This file configures Doppler secret management for the project
+# 
+# Setup Instructions:
+# 1. Install Doppler CLI: https://docs.doppler.com/docs/install-cli
+# 2. Run: doppler setup
+# 3. Select your project and environment (dev/staging/prod)
+#
+# Usage:
+# - Run commands with: doppler run -- npm run dev
+# - Or use the npm scripts: npm run dev:doppler
+
+setup:
+  project: measurebowl
+  config: dev  # Options: dev, staging, prod
+
+# Environment mappings
+# Each environment should be configured in Doppler dashboard
+environments:
+  - name: dev
+    description: Development environment
+  - name: staging
+    description: Staging environment for testing
+  - name: prod
+    description: Production environment
+
+# Note: Actual secrets are managed in Doppler dashboard
+# This file only provides project configuration reference
+

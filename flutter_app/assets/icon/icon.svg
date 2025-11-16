@@ -1,0 +1,44 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient - green grass -->
+  <defs>
+    <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2E7D32;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1B5E20;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="bowlGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#66BB6A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <rect width="1024" height="1024" fill="url(#grassGrad)"/>
+  
+  <!-- Main lawn bowl (spherical, viewed from top) -->
+  <circle cx="512" cy="450" r="320" fill="url(#bowlGrad)" stroke="#1B5E20" stroke-width="16"/>
+  
+  <!-- Inner depth circle -->
+  <circle cx="512" cy="450" r="260" fill="#4CAF50" opacity="0.7"/>
+  
+  <!-- Top highlight (3D sphere effect) -->
+  <ellipse cx="512" cy="320" rx="240" ry="140" fill="#81C784" opacity="0.8"/>
+  
+  <!-- Bias indicator (weighted side - distinctive lawn bowl feature) -->
+  <circle cx="360" cy="420" r="70" fill="#1B5E20" opacity="0.85"/>
+  
+  <!-- Concentric rings (typical lawn bowl decorative pattern) -->
+  <circle cx="512" cy="450" r="290" fill="none" stroke="#1B5E20" stroke-width="12" opacity="0.5"/>
+  <circle cx="512" cy="450" r="240" fill="none" stroke="#1B5E20" stroke-width="10" opacity="0.4"/>
+  <circle cx="512" cy="450" r="190" fill="none" stroke="#1B5E20" stroke-width="8" opacity="0.3"/>
+  
+  <!-- Bottom shadow for depth -->
+  <ellipse cx="512" cy="620" rx="280" ry="100" fill="#1B5E20" opacity="0.4"/>
+  
+  <!-- Small jack (target ball) in corner for context -->
+  <circle cx="750" cy="300" r="50" fill="#FFD700" stroke="#FFA000" stroke-width="5"/>
+  <circle cx="750" cy="300" r="35" fill="#FFF59D" opacity="0.9"/>
+  <circle cx="750" cy="300" r="20" fill="#FFD700" opacity="0.6"/>
+  
+  <!-- App name text "Stand 'n' Measure" -->
+  <text x="512" y="800" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#FFFFFF" text-anchor="middle" stroke="#1B5E20" stroke-width="4">Stand 'n' Measure</text>
+</svg>
+

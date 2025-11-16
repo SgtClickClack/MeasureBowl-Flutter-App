@@ -1,0 +1,33 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build AAB and upload to Google Play internal track"
+  lane :internal do
+    gradle(task: "bundle", build_type: "Release")
+    
+    # Get credentials from environment variable
+    credentials_json = ENV['GOOGLE_PLAY_CREDENTIALS']
+    if credentials_json.nil?
+      UI.user_error!("GOOGLE_PLAY_CREDENTIALS environment variable is required")
+    end
+    
+    # Write credentials to temporary file
+    require 'tempfile'
+    temp_file = Tempfile.new(['play_credentials', '.json'])
+    temp_file.write(credentials_json)
+    temp_file.close
+    
+    upload_to_play_store(
+      track: "internal",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: temp_file.path,
+      package_name: "com.standnmeasure.app",
+      release_status: "completed"
+    )
+    
+    # Clean up temporary file
+    temp_file.unlink
+  end
+end
+
+

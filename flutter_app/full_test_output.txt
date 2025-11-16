@@ -1,0 +1,60 @@
+﻿Resolving dependencies...
+Downloading packages...
+  camera 0.10.6 (0.11.3 available)
+  characters 1.4.0 (1.4.1 available)
+  dartcv4 1.1.6 (1.1.8 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 2.0.3 (6.0.0 available)
+  lints 2.1.1 (6.0.0 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.16.0 (1.17.0 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  test_api 0.7.6 (0.7.7 available)
+Got dependencies!
+11 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/USER/MeasureBowl-Flutter-App/flutter_app/integration_test/image_processing_integration_test.dart
+Running Gradle task 'assembleDebug'...                             16.5s
+ΓêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          15.5s
+00:00 +0: Image Processing Integration Tests should process test image and detect jack and bowls
+[ImageProcessor] MainThread: Calling 'compute' to run processing in background isolate...
+DEBUG: Detected 8 bowls total
+  Bowl 0: color=Unknown, distance=10.905498086270438cm, area=884.0px┬▓
+  Bowl 1: color=Too Bright, distance=28.50403715006546cm, area=719.5px┬▓
+  Bowl 2: color=Too Bright, distance=32.10099442363065cm, area=1236.5px┬▓
+  Bowl 3: color=Yellow, distance=42.3654122346742cm, area=577.0px┬▓
+  Bowl 4: color=Too Bright, distance=61.18546992182637cm, area=838.0px┬▓
+  Bowl 5: color=Unknown, distance=77.19931626082611cm, area=606.5px┬▓
+  Bowl 6: color=Too Bright, distance=78.73367353690979cm, area=988.0px┬▓
+  Bowl 7: color=Unknown, distance=78.87497331711604cm, area=1277.0px┬▓
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following TestFailure was thrown running a test:
+Expected: <4>
+  Actual: <8>
+Should detect exactly 4 bowls in the test image (detected 8)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///C:/Users/USER/MeasureBowl-Flutter-App/flutter_app/integration_test/image_processing_integration_test.dart:123:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Users/USER/MeasureBowl-Flutter-App/flutter_app/integration_test/image_processing_integration_test.dart line 123
+The test description was:
+  should process test image and detect jack and bowls
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+00:04 +0 -1: Image Processing Integration Tests should process test image and detect jack and bowls [E]
+  Test failed. See exception logs above.
+  The test description was: should process test image and detect jack and bowls
+  
+00:04 +0 -1: Image Processing Integration Tests should handle invalid image gracefully
+[ImageProcessor] MainThread: Calling 'compute' to run processing in background isolate...
+00:05 +1 -1: (tearDownAll)
+00:05 +1 -1: Some tests failed.

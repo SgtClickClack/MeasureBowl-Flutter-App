@@ -1,0 +1,4 @@
+json_key_file("C:/Users/USER/MeasureBowl-Flutter-App/fastlane/play-console-credentials-NEW.json")
+package_name("com.standnmeasure.app")
+
+

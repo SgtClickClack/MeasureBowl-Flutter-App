@@ -4,3 +4,58 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Flutter/Dart related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+*.apk
+*.aab
+*.apk.gz
+*.ipa
+*.dmg
+*.app
+
+# iOS related
+**/ios/.symlinks/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/ios/.generated/
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Android related
+**/android/.gradle/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/.idea/
+**/android/local.properties
+**/android/*.iml
+**/android/.cxx/
+**/android/.externalNativeBuild/
+
+# Coverage
+coverage/
+**/coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Miscellaneous
+*.log
+*.swp
+*.swo
+*~

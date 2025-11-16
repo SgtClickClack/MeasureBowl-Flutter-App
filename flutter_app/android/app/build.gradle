@@ -22,10 +22,27 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// Load upload keystore properties if present
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+} else {
+    throw new FileNotFoundException("Keystore properties file not found at: ${keystorePropertiesFile}")
+}
+
+// Extract properties to variables for use in signingConfigs
+def keystoreStoreFile = keystoreProperties.getProperty('storeFile')
+def keystoreKeyAlias = keystoreProperties.getProperty('keyAlias')
+def keystoreStorePassword = keystoreProperties.getProperty('storePassword')
+def keystoreKeyPassword = keystoreProperties.getProperty('keyPassword')
+
 android {
-    namespace "com.example.lawn_bowls_measure"
+    namespace "com.standnmeasure.app"
     compileSdkVersion flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -40,30 +57,63 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    signingConfigs {
+        release {
+            // Values match android/key.properties
+            // If properties file loading fails, these hardcoded values ensure signing works
+            keyAlias "upload"
+            keyPassword "password123"
+            storeFile file("upload-keystore.jks")
+            storePassword "password123"
+        }
+    }
+
     defaultConfig {
-        applicationId "com.example.lawn_bowls_measure"
-        // Camera plugin and opencv_dart require minSdkVersion 21
-        minSdkVersion 21
+        applicationId "com.standnmeasure.app"
+        // Camera plugin and opencv_dart require minSdkVersion 24
+        minSdkVersion 24
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         
-        // NDK configuration for opencv_dart native libraries
-        externalNativeBuild {
-            cmake {
-                cppFlags "-frtti -fexceptions"
-                abiFilters 'armeabi-v7a', 'arm64-v8a'
-            }
-        }
-        
         ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
     }
 
+    // Note: externalNativeBuild/cmake configuration removed because:
+    // 1. opencv_dart uses FFI (Foreign Function Interface), not CMake compilation
+    // 2. No CMakeLists.txt file exists in the project
+    // 3. The native libraries are pre-built and loaded via FFI
+    // If C++ optimization flags are needed in the future, they should be set
+    // in the native library build process, not in the Android Gradle build.
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            // Enable minification for production builds
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            
+            // Prevent stripping of native libraries (critical for OpenCV)
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
+        }
+    }
+
+    // NDK configuration for opencv_dart native libraries
+    // Note: opencv_dart uses FFI (Foreign Function Interface), so CMake configuration is not needed
+    // The native libraries are pre-built and loaded via FFI, not compiled from source
+
+    packaging {
+        jniLibs {
+            // Use legacy packaging to prevent stripping/compression of native libraries
+            // This is critical for OpenCV native libraries to work correctly
+            useLegacyPackaging = true
+            // Explicitly keep all debug symbols for native libraries
+            keepDebugSymbols += "**/*.so"
         }
     }
 }

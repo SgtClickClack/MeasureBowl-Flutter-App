@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../styles/app_styles.dart';
 
 /// Help screen with usage instructions and tips for the lawn bowls measuring app
 class HelpView extends StatelessWidget {
@@ -6,88 +8,93 @@ class HelpView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Help & Instructions',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Help & Instructions'),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppStyles.kSpacingLarge),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // How to Use Section
-              _buildSectionTitle('How to Use'),
-              const SizedBox(height: 16),
+              _buildSectionTitle(context, 'How to Use'),
+              const SizedBox(height: AppStyles.kSpacingMedium),
               _buildInstructionStep(
+                context,
                 '1.',
                 'Hold your phone directly above the jack and bowls.',
                 Icons.phone_android,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppStyles.kSpacingSmall),
               _buildInstructionStep(
+                context,
                 '2.',
                 'Tap the large \'Measure\' button.',
                 Icons.camera_alt,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppStyles.kSpacingSmall),
               _buildInstructionStep(
+                context,
                 '3.',
                 'View the ranked results.',
                 Icons.format_list_numbered,
               ),
-              
-              const SizedBox(height: 32),
-              
+
+              const SizedBox(height: AppStyles.kSpacingLarge),
+
               // Tips Section
-              _buildSectionTitle('Tips for Best Results'),
-              const SizedBox(height: 16),
+              _buildSectionTitle(context, 'Tips for Best Results'),
+              const SizedBox(height: AppStyles.kSpacingMedium),
               _buildTip(
+                context,
                 'Avoid strong shadows across the bowls.',
                 Icons.wb_sunny_outlined,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppStyles.kSpacingSmall),
               _buildTip(
+                context,
                 'Make sure the jack is clearly visible.',
                 Icons.visibility,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppStyles.kSpacingSmall),
               _buildTip(
+                context,
                 'Hold the phone steady while measuring.',
                 Icons.pan_tool_outlined,
               ),
-              
-              const SizedBox(height: 40),
-              
+
+              const SizedBox(height: AppStyles.kSpacingLarge * 2),
+
               // Close Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[600],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppStyles.kSpacingMedium),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Close',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: AppStyles.kFontSizeTitle,
+                      fontWeight: AppStyles.kFontWeightBold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -100,26 +107,37 @@ class HelpView extends StatelessWidget {
   }
 
   /// Build a section title with large, bold text
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
+      style: TextStyle(
+        fontSize:
+            AppStyles.kFontSizeTitle + 6, // Slightly larger for section headers
+        fontWeight: AppStyles.kFontWeightBold,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
 
   /// Build an instruction step with number, text, and icon
-  Widget _buildInstructionStep(String number, String instruction, IconData icon) {
+  Widget _buildInstructionStep(
+    BuildContext context,
+    String number,
+    String instruction,
+    IconData icon,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppStyles.kSpacingMedium),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: isDark
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.blue[200]!,
+          color: colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -130,37 +148,37 @@ class HelpView extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: colorScheme.primary,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  color: colorScheme.onPrimary,
+                  fontSize: AppStyles.kFontSizeTitle,
+                  fontWeight: AppStyles.kFontWeightBold,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppStyles.kSpacingMedium),
           // Instruction Text
           Expanded(
             child: Text(
               instruction,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.black87,
+              style: TextStyle(
+                fontSize: AppStyles.kFontSizeTitle,
+                color: colorScheme.onSurface,
                 height: 1.4,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppStyles.kSpacingSmall),
           // Icon
           Icon(
             icon,
-            color: Colors.blue[600],
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
             size: 28,
           ),
         ],
@@ -169,14 +187,19 @@ class HelpView extends StatelessWidget {
   }
 
   /// Build a tip with icon and text
-  Widget _buildTip(String tip, IconData icon) {
+  Widget _buildTip(BuildContext context, String tip, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppStyles.kSpacingMedium),
       decoration: BoxDecoration(
-        color: Colors.green[50],
+        color: isDark
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.green[200]!,
+          color: colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -184,16 +207,16 @@ class HelpView extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: Colors.green[600],
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
             size: 24,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppStyles.kSpacingSmall),
           Expanded(
             child: Text(
               tip,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
+              style: TextStyle(
+                fontSize: AppStyles.kFontSizeBody,
+                color: colorScheme.onSurface,
                 height: 1.4,
               ),
             ),

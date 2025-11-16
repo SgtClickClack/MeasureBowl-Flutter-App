@@ -30,6 +30,21 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-toast', '@radix-ui/react-button'],
+          'utils-vendor': ['date-fns', 'zod', 'nanoid'],
+          // App chunks
+          'camera': ['./client/src/components/camera-view.tsx'],
+          'processing': ['./client/src/components/processing-view.tsx'],
+          'results': ['./client/src/components/results-view.tsx'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     fs: {

@@ -80,6 +80,70 @@ The UI is designed specifically for elderly users with:
 - **Clear Feedback**: Loading states and visual confirmations
 - **Portrait Orientation**: Optimized for one-handed phone use
 
+## HSV Color Calibration Tools
+
+The app includes two tools for tuning HSV color ranges for object detection:
+
+### Python Calibration Tool (Development)
+
+A standalone Python script for rapid HSV range tuning on test images:
+
+**Location:** `tools/hsv_calibrator.py`
+
+**Usage:**
+```bash
+# Use default test image
+python tools/hsv_calibrator.py
+
+# Use custom image
+python tools/hsv_calibrator.py path/to/your/image.jpg
+```
+
+**Features:**
+- 6 interactive trackbars for H, S, V min/max values
+- Real-time mask visualization
+- Real-time masked result preview
+- Save HSV ranges to file
+- Load preset ranges for different colors (Red, Blue, Black, White, Yellow)
+- Keyboard shortcuts:
+  - `s`: Save current ranges
+  - `r`: Reset to default red ranges
+  - `1-6`: Load color presets
+  - `q`: Quit
+
+**Requirements:**
+- Python 3.x
+- OpenCV (`pip install opencv-python`)
+- NumPy (`pip install numpy`)
+
+### Flutter HSV Calibration Tool (In-Field)
+
+An integrated calibration tool accessible from the Settings menu:
+
+**Access:** Settings → HSV Color Calibration → Open HSV Calibration Tool
+
+**Features:**
+- Live camera preview with real-time mask overlay
+- 6 sliders for HSV bounds (H: 0-179, S: 0-255, V: 0-255)
+- Load preset ranges for different colors
+- Export HSV ranges in DetectionConfig format
+- Optimized for in-field calibration using actual device camera
+
+**Usage:**
+1. Navigate to Settings from the main camera view
+2. Scroll to "HSV Color Calibration" section
+3. Tap "Open HSV Calibration Tool"
+4. Adjust sliders to fine-tune color detection
+5. Use the preset button to load default ranges for specific colors
+6. Use the code button to view/copy the HSV ranges in Dart format
+
+**Best Practices:**
+- Calibrate in the same lighting conditions where you'll use the app
+- Test with multiple test images (bright sun, cloudy, shadow)
+- Start with the default presets and adjust incrementally
+- Higher S_Min values ensure color purity (reject desaturated colors)
+- Appropriate V_Min values handle shadows (lower = more permissive)
+
 ## Mock Data
 
 The app currently uses mock measurement data for testing:

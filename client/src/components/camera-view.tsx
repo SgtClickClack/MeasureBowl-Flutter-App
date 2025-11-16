@@ -38,7 +38,7 @@ export function CameraView({ onCapture, onEnterManual }: CameraViewProps) {
 
   if (cameraState.error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-secondary camera-viewfinder">
+      <div data-testid="camera-view" className="flex-1 flex items-center justify-center bg-secondary camera-viewfinder">
         <div className="text-center space-y-4 p-6 bg-background/80 backdrop-blur-sm rounded-lg max-w-sm mx-4">
           <Camera className="mx-auto h-12 w-12 text-destructive" />
           <div>
@@ -102,7 +102,7 @@ export function CameraView({ onCapture, onEnterManual }: CameraViewProps) {
   }
 
   return (
-    <div className="flex-1 relative bg-secondary camera-viewfinder">
+    <div data-testid="camera-view" className="flex-1 relative bg-secondary camera-viewfinder">
       {/* Status Bar */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between px-6 py-4">
@@ -185,7 +185,7 @@ export function CameraView({ onCapture, onEnterManual }: CameraViewProps) {
             onClick={handleMeasure}
             disabled={!cameraState.isInitialized || !openCVState.isLoaded || isCapturing}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-2xl py-6 px-8 rounded-lg shadow-lg border-2 border-primary-foreground/20 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary/50"
-            data-testid="measure-button"
+            data-testid="camera-button"
           >
             <Camera className="mr-4 h-6 w-6" />
             {isCapturing ? 'Capturing...' : 'Measure Distance'}
@@ -193,6 +193,14 @@ export function CameraView({ onCapture, onEnterManual }: CameraViewProps) {
 
           {/* Secondary Actions */}
           <div className="flex justify-center space-x-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={onEnterManual}
+              className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium px-6 py-3 rounded-lg border border-border transition-colors"
+              data-testid="manual-button"
+            >
+              Manual Entry
+            </Button>
             <Button
               variant="secondary"
               className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium px-6 py-3 rounded-lg border border-border transition-colors"

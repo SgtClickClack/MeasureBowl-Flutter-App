@@ -1,0 +1,227 @@
+name: MeasureBowl CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+        - android
+        - ios
+        - web
+        - all
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+        - debug
+        - release
+
+jobs:
+  analyze:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: |
+        cd flutter_app
+        flutter pub get
+    
+    - name: Analyze code
+      run: |
+        cd flutter_app
+        flutter analyze
+    
+    - name: Check formatting
+      run: |
+        cd flutter_app
+        dart format --output=none --set-exit-if-changed .
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: |
+        cd flutter_app
+        flutter pub get
+    
+    - name: Run tests
+      run: |
+        cd flutter_app
+        flutter test --coverage
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: flutter_app/coverage/lcov.info
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [analyze, test]
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || github.event.inputs.platform == '' || github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Install dependencies
+      run: |
+        cd flutter_app
+        flutter pub get
+    
+    - name: Build APK
+      if: github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == ''
+      run: |
+        cd flutter_app
+        flutter build apk --debug
+    
+    - name: Build AAB
+      if: github.event.inputs.build_type == 'release'
+      run: |
+        cd flutter_app
+        flutter build appbundle --release
+    
+    - name: Upload APK
+      if: github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug-apk
+        path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+    
+    - name: Upload AAB
+      if: github.event.inputs.build_type == 'release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-aab
+        path: flutter_app/build/app/outputs/bundle/release/app-release.aab
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: [analyze, test]
+    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: |
+        cd flutter_app
+        flutter pub get
+    
+    - name: Build iOS
+      run: |
+        cd flutter_app
+        flutter build ios --release --no-codesign
+    
+    - name: Upload iOS build
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-ios-release
+        path: flutter_app/build/ios/iphoneos/Runner.app
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: [analyze, test]
+    if: github.event.inputs.platform == 'web' || github.event.inputs.platform == 'all'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: |
+        cd flutter_app
+        flutter pub get
+    
+    - name: Build Web
+      run: |
+        cd flutter_app
+        flutter build web
+    
+    - name: Upload Web build
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-web-release
+        path: flutter_app/build/web
+
+  deploy-android:
+    name: Deploy Android
+    runs-on: ubuntu-latest
+    needs: build-android
+    if: github.ref == 'refs/heads/main' && github.event.inputs.build_type == 'release'
+    environment: production
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+        bundler-cache: true
+        working-directory: flutter_app/android
+    
+    - name: Install Fastlane dependencies
+      run: |
+        cd flutter_app/android
+        bundle install
+    
+    - name: Deploy to Google Play
+      env:
+        GOOGLE_PLAY_CREDENTIALS: ${{ secrets.GOOGLE_PLAY_CREDENTIALS }}
+      run: |
+        cd flutter_app/android
+        bundle exec fastlane android internal
